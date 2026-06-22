@@ -1,0 +1,9 @@
+# Build
+build/
+*.o
+*.so
+*.a
+
+# Editor
+*.swp
+*~
