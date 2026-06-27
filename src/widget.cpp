@@ -1,0 +1,55 @@
+#include "widget.h"
+#include "ui_widget.h"
+#include <QVBoxLayout>
+#include <QFont>
+
+Widget::Widget(QWidget *parent)
+    : QWidget(parent), ui(new Ui::Widget)
+{
+    ui->setupUi(this);
+
+    QFont titleFont;
+    titleFont.setPointSize(24);
+    titleFont.setBold(true);
+    ui->titleLabel->setFont(titleFont);
+
+    QFont scoreFont;
+    scoreFont.setPointSize(14);
+    scoreFont.setBold(true);
+    ui->scoreLabel->setFont(scoreFont);
+    ui->bestLabel->setFont(scoreFont);
+
+    m_gameBoard = new GameBoard(this);
+
+    QVBoxLayout *gameLayout = new QVBoxLayout();
+    gameLayout->setContentsMargins(0, 0, 0, 0);
+    gameLayout->addWidget(m_gameBoard, 1);
+    ui->gameContainer->setLayout(gameLayout);
+
+    for (int i = 0; i < ui->sideLayout->count(); ++i) {
+        if (auto *item = ui->sideLayout->itemAt(i)) {
+            item->setAlignment(Qt::AlignHCenter);
+        }
+    }
+
+    connect(m_gameBoard, &GameBoard::puntuacionCambiada, this, &Widget::updateScore);
+    connect(ui->startBtn, &QPushButton::clicked, this, &Widget::onStartClicked);
+
+    ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n0"));
+    ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n0"));
+}
+
+Widget::~Widget()
+{
+    delete ui;
+}
+
+void Widget::onStartClicked()
+{
+    m_gameBoard->nuevoJuego();
+}
+
+void Widget::updateScore(int score)
+{
+    ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n") + QString::number(score));
+}
