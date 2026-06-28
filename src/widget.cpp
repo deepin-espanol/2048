@@ -20,6 +20,7 @@ Widget::Widget(QWidget *parent)
     ui->bestLabel->setFont(scoreFont);
 
     m_gameBoard = new GameBoard(this);
+    m_soundManager = new SoundManager(this);
 
     QVBoxLayout *gameLayout = new QVBoxLayout();
     gameLayout->setContentsMargins(0, 0, 0, 0);
@@ -33,6 +34,7 @@ Widget::Widget(QWidget *parent)
     }
 
     connect(m_gameBoard, &GameBoard::puntuacionCambiada, this, &Widget::updateScore);
+    connect(m_gameBoard, &GameBoard::soundRequested, m_soundManager, &SoundManager::playSound);
     connect(ui->startBtn, &QPushButton::clicked, this, &Widget::onStartClicked);
 
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n0"));
@@ -47,6 +49,8 @@ Widget::~Widget()
 void Widget::onStartClicked()
 {
     m_gameBoard->nuevoJuego();
+    ui->undoBtn->setEnabled(false);
+    m_soundManager->playStart();
 }
 
 void Widget::updateScore(int score)

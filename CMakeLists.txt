@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 
 find_package(Dtk6Widget REQUIRED)
 
@@ -21,9 +21,12 @@ add_executable(2048
     src/widget.h
     src/widget.ui
     src/resources.qrc
+    src/soundmanager.cpp
+    src/soundmanager.h
 )
 
 target_link_libraries(2048 PRIVATE
     Qt6::Widgets
+    Qt6::Multimedia
     Dtk6::Widget
 )

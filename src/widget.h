@@ -2,6 +2,7 @@
 #define WIDGET2048_H
 
 #include "GameBoard.h"
+#include "soundmanager.h"
 #include <QWidget>
 
 namespace Ui {
@@ -14,6 +15,10 @@ class Widget : public QWidget {
 public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
+    SoundManager *soundManager() const { return m_soundManager; }
+
+signals:
+    void musicToggled(bool muted);
 
 private slots:
     void onStartClicked();
@@ -22,6 +27,7 @@ private slots:
 private:
     Ui::Widget *ui;
     GameBoard *m_gameBoard;
+    SoundManager *m_soundManager;
 };
 
 #endif
