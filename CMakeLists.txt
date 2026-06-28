@@ -20,6 +20,7 @@ add_executable(2048
     src/widget.cpp
     src/widget.h
     src/widget.ui
+    src/resources.qrc
 )
 
 target_link_libraries(2048 PRIVATE

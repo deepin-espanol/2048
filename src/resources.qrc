@@ -1,0 +1,16 @@
+<RCC>
+  <qresource prefix="/">
+    <file>icons/2048.svg</file>
+    <file>icons/Logo-Racoon.png</file>
+  </qresource>
+  <qresource prefix="/translations">
+    <file>translations/2048_es.qm</file>
+    <file>translations/2048_de.qm</file>
+    <file>translations/2048_fr.qm</file>
+    <file>translations/2048_it.qm</file>
+    <file>translations/2048_pt.qm</file>
+    <file>translations/2048_ru.qm</file>
+    <file>translations/2048_zh.qm</file>
+    <file>translations/2048_uk.qm</file>
+  </qresource>
+</RCC>
