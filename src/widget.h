@@ -3,7 +3,9 @@
 
 #include "GameBoard.h"
 #include "soundmanager.h"
+#include "settingsdialog.h"
 #include <QWidget>
+#include <QSettings>
 
 namespace Ui {
 class Widget;
@@ -16,6 +18,7 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
     SoundManager *soundManager() const { return m_soundManager; }
+    void openSettings();
 
 signals:
     void musicToggled(bool muted);
@@ -25,9 +28,14 @@ private slots:
     void updateScore(int score);
 
 private:
+    void loadSettings();
+    void saveSettings();
+
     Ui::Widget *ui;
     GameBoard *m_gameBoard;
     SoundManager *m_soundManager;
+    SettingsDialog *m_settingsDialog;
+    bool m_muted;
 };
 
 #endif

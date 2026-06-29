@@ -2,6 +2,9 @@
 #include "widget.h"
 
 #include <DMainWindow>
+#include <DTitlebar>
+#include <QMenu>
+#include <QAction>
 #include <QVBoxLayout>
 
 DWIDGET_USE_NAMESPACE
@@ -17,6 +20,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(w);
     centralWidget()->layout()->setContentsMargins(0, 0, 0, 0);
+
+    QMenu *menu = new QMenu(this);
+    QAction *settingsAction = menu->addAction(tr("Settings"));
+    connect(settingsAction, &QAction::triggered, w, &Widget::openSettings);
+    titlebar()->setMenu(menu);
 }
 
 MainWindow::~MainWindow()

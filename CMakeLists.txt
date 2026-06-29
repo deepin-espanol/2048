@@ -23,6 +23,8 @@ add_executable(2048
     src/resources.qrc
     src/soundmanager.cpp
     src/soundmanager.h
+    src/settingsdialog.cpp
+    src/settingsdialog.h
 )
 
 target_link_libraries(2048 PRIVATE

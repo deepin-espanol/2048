@@ -4,7 +4,7 @@
 #include <QFont>
 
 Widget::Widget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::Widget)
+    : QWidget(parent), ui(new Ui::Widget), m_muted(false)
 {
     ui->setupUi(this);
 
@@ -21,6 +21,7 @@ Widget::Widget(QWidget *parent)
 
     m_gameBoard = new GameBoard(this);
     m_soundManager = new SoundManager(this);
+    m_settingsDialog = new SettingsDialog(this);
 
     QVBoxLayout *gameLayout = new QVBoxLayout();
     gameLayout->setContentsMargins(0, 0, 0, 0);
@@ -35,7 +36,18 @@ Widget::Widget(QWidget *parent)
 
     connect(m_gameBoard, &GameBoard::puntuacionCambiada, this, &Widget::updateScore);
     connect(m_gameBoard, &GameBoard::soundRequested, m_soundManager, &SoundManager::playSound);
+
     connect(ui->startBtn, &QPushButton::clicked, this, &Widget::onStartClicked);
+
+    connect(m_settingsDialog, &SettingsDialog::soundToggled, this, [this](bool enabled) {
+        m_muted = !enabled;
+        m_soundManager->setMuted(m_muted);
+        saveSettings();
+    });
+
+    loadSettings();
+    m_soundManager->setMuted(m_muted);
+    m_settingsDialog->setSound(!m_muted);
 
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n0"));
     ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n0"));
@@ -56,4 +68,26 @@ void Widget::onStartClicked()
 void Widget::updateScore(int score)
 {
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n") + QString::number(score));
+}
+
+void Widget::openSettings()
+{
+    m_settingsDialog->setSound(!m_muted);
+
+    if (m_settingsDialog->exec() == QDialog::Accepted) {
+        saveSettings();
+    }
+}
+
+void Widget::loadSettings()
+{
+    QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
+    m_muted = settings.value(QStringLiteral("muted"), false).toBool();
+}
+
+void Widget::saveSettings()
+{
+    QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
+    settings.setValue(QStringLiteral("muted"), m_muted);
+    settings.sync();
 }
