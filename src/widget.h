@@ -26,6 +26,7 @@ signals:
 private slots:
     void onStartClicked();
     void updateScore(int score);
+    void onUndoAvailabilityChanged(bool available);
 
 private:
     void loadSettings();

@@ -1,4 +1,5 @@
 #include "GameBoard.h"
+#include "soundmanager.h"
 
 #include <QRandomGenerator>
 #include <QKeyEvent>
@@ -19,6 +20,9 @@ GameBoard::GameBoard(QWidget *parent)
 
 void GameBoard::nuevoJuego()
 {
+    m_undoStack.clear();
+    emit undoAvailabilityChanged(false);
+
     m_puntos = 0;
     m_gameOver = false;
     m_victoria = false;
@@ -31,6 +35,35 @@ void GameBoard::nuevoJuego()
     agregarTileAleatorio();
     agregarTileAleatorio();
     actualizarUI();
+    emitirGuardado();
+}
+
+bool GameBoard::undo()
+{
+    if (m_undoStack.isEmpty()) return false;
+
+    auto estado = m_undoStack.takeLast();
+    m_tablero = estado.first;
+    m_puntos = estado.second;
+    emit undoAvailabilityChanged(!m_undoStack.isEmpty());
+
+    if (m_gameOver || m_victoria) {
+        m_gameOver = false;
+        m_victoria = false;
+        m_overlayShown = false;
+    }
+
+    actualizarUI();
+    emitirGuardado();
+    return true;
+}
+
+void GameBoard::guardarEstadoUndo()
+{
+    m_undoStack.append(qMakePair(m_tablero, m_puntos));
+    if (m_undoStack.size() > 20)
+        m_undoStack.removeFirst();
+    emit undoAvailabilityChanged(true);
 }
 
 void GameBoard::agregarTileAleatorio()
@@ -52,6 +85,11 @@ void GameBoard::actualizarUI()
 {
     emit puntuacionCambiada(m_puntos);
     update();
+}
+
+void GameBoard::emitirGuardado()
+{
+    emit juegoGuardado(serializar());
 }
 
 bool GameBoard::puedeMover(Direccion d) const
@@ -107,7 +145,10 @@ bool GameBoard::comprimirLinea(QVector<int> &linea)
 
 void GameBoard::procesarMovimiento(Direccion d)
 {
+    QVector<QVector<int>> anterior = m_tablero;
+    int puntosAnteriores = m_puntos;
     bool cambiado = false;
+
     for (int i = 0; i < TAMANIO; ++i) {
         QVector<int> linea;
         for (int j = 0; j < TAMANIO; ++j)
@@ -134,10 +175,13 @@ void GameBoard::procesarMovimiento(Direccion d)
 
     if (!cambiado) return;
 
-    int puntosAntes = m_puntos;
+    guardarEstadoUndo();
+
+    bool fusionado = m_puntos > puntosAnteriores;
     agregarTileAleatorio();
-    emit soundRequested(m_puntos > puntosAntes ? 1 : 0);
+    emit soundRequested(fusionado ? SoundManager::SND_MERGE : SoundManager::SND_MOVE);
     actualizarUI();
+    emitirGuardado();
 
     bool alcanzo2048 = false;
     for (int i = 0; i < TAMANIO && !alcanzo2048; ++i)
@@ -148,12 +192,14 @@ void GameBoard::procesarMovimiento(Direccion d)
     if (alcanzo2048 && !m_victoria) {
         m_victoria = true;
         m_overlayShown = true;
+        emit soundRequested(SoundManager::SND_VICTORY);
         emit victoria(m_puntos);
         update();
     } else if (!puedeMover(Direccion::Izquierda) && !puedeMover(Direccion::Derecha) &&
                !puedeMover(Direccion::Arriba) && !puedeMover(Direccion::Abajo)) {
         m_gameOver = true;
         m_overlayShown = true;
+        emit soundRequested(SoundManager::SND_GAMEOVER);
         emit juegoTerminado(m_puntos);
         update();
     }
@@ -161,6 +207,16 @@ void GameBoard::procesarMovimiento(Direccion d)
 
 void GameBoard::keyPressEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_F2 ||
+        (event->key() == Qt::Key_N && (event->modifiers() & Qt::ControlModifier))) {
+        nuevoJuego();
+        return;
+    }
+    if (event->key() == Qt::Key_Z && (event->modifiers() & Qt::ControlModifier)) {
+        undo();
+        return;
+    }
+
     if (m_overlayShown) {
         if (event->key() == Qt::Key_Space) {
             nuevoJuego();
@@ -302,7 +358,7 @@ void GameBoard::dibujarOverlay(QPainter &painter, const QRectF &boardRect)
     painter.drawText(QRectF(panelRect.left(), panelRect.top() + panelRect.height() * 0.38,
                             panelRect.width(), panelRect.height() * 0.2),
                      Qt::AlignCenter,
-                     tr("Score: %1").arg(m_puntos));
+                     tr("Score: %1   Best: %2").arg(m_puntos).arg(m_mejorPuntuacion));
 
     QFont hintFont = painter.font();
     hintFont.setPointSizeF(9.5);
@@ -358,4 +414,41 @@ QColor GameBoard::textColorForValue(int val) const
     if (val <= 4)
         return QColor(0x77, 0x6e, 0x65);
     return QColor(0xf9, 0xf6, 0xf2);
+}
+
+QString GameBoard::serializar() const
+{
+    QStringList numeros;
+    for (int i = 0; i < TAMANIO; ++i)
+        for (int j = 0; j < TAMANIO; ++j)
+            numeros.append(QString::number(m_tablero[i][j]));
+    return numeros.join(QLatin1Char(',')) + QLatin1Char(';') + QString::number(m_puntos);
+}
+
+void GameBoard::deserializar(const QString &data)
+{
+    QStringList partes = data.split(QLatin1Char(';'));
+    QStringList numeros = partes.value(0).split(QLatin1Char(','));
+    if (numeros.size() != TAMANIO * TAMANIO) return;
+
+    int idx = 0;
+    for (int i = 0; i < TAMANIO; ++i)
+        for (int j = 0; j < TAMANIO; ++j)
+            m_tablero[i][j] = numeros[idx++].toInt();
+
+    m_puntos = partes.size() > 1 ? partes[1].toInt() : 0;
+    m_gameOver = false;
+    m_victoria = false;
+    m_overlayShown = false;
+    m_undoStack.clear();
+    emit undoAvailabilityChanged(false);
+
+    if (!puedeMover(Direccion::Izquierda) && !puedeMover(Direccion::Derecha) &&
+        !puedeMover(Direccion::Arriba) && !puedeMover(Direccion::Abajo)) {
+        m_gameOver = true;
+        m_overlayShown = true;
+    }
+
+    actualizarUI();
+    emitirGuardado();
 }

@@ -36,8 +36,10 @@ Widget::Widget(QWidget *parent)
 
     connect(m_gameBoard, &GameBoard::puntuacionCambiada, this, &Widget::updateScore);
     connect(m_gameBoard, &GameBoard::soundRequested, m_soundManager, &SoundManager::playSound);
+    connect(m_gameBoard, &GameBoard::undoAvailabilityChanged, this, &Widget::onUndoAvailabilityChanged);
 
     connect(ui->startBtn, &QPushButton::clicked, this, &Widget::onStartClicked);
+    connect(ui->undoBtn, &QPushButton::clicked, m_gameBoard, &GameBoard::undo);
 
     connect(m_settingsDialog, &SettingsDialog::soundToggled, this, [this](bool enabled) {
         m_muted = !enabled;
@@ -68,6 +70,11 @@ void Widget::onStartClicked()
 void Widget::updateScore(int score)
 {
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n") + QString::number(score));
+}
+
+void Widget::onUndoAvailabilityChanged(bool available)
+{
+    ui->undoBtn->setEnabled(available);
 }
 
 void Widget::openSettings()
