@@ -1,0 +1,27 @@
+[Desktop Entry]
+Type=Application
+Name=2048
+GenericName=Puzzle Game
+GenericName[de]=Puzzle-Spiel
+GenericName[es]=Juego de rompecabezas
+GenericName[fr]=Jeu de réflexion
+GenericName[it]=Gioco di rompicapo
+GenericName[pt]=Jogo de quebra-cabeça
+GenericName[ru]=Головоломка
+GenericName[uk]=Головоломка
+GenericName[zh]=益智游戏
+Comment=Classic 2048 puzzle game
+Comment[de]=Klassisches 2048-Puzzlespiel
+Comment[es]=Juego clásico de rompecabezas 2048
+Comment[fr]=Jeu de réflexion classique 2048
+Comment[it]=Gioco rompicapo classico 2048
+Comment[pt]=Jogo clássico de quebra-cabeça 2048
+Comment[ru]=Классическая головоломка 2048
+Comment[uk]=Класична головоломка 2048
+Comment[zh]=经典2048益智游戏
+Exec=2048
+Icon=2048-deepin
+Terminal=false
+Categories=Game;LogicGame;BoardGame;
+Keywords=2048;puzzle;board;
+Keywords[es]=2048;rompecabezas;tablero;
