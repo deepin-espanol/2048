@@ -35,6 +35,7 @@ private:
     void saveHighScore(int score);
     void loadSettings();
     void saveSettings();
+    void loadGameState();
 
     Ui::Widget *ui;
     GameBoard *m_gameBoard;

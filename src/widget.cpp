@@ -38,6 +38,11 @@ Widget::Widget(QWidget *parent)
     connect(m_gameBoard, &GameBoard::juegoTerminado, this, &Widget::onGameOver);
     connect(m_gameBoard, &GameBoard::victoria, this, &Widget::onVictory);
     connect(m_gameBoard, &GameBoard::soundRequested, m_soundManager, &SoundManager::playSound);
+    connect(m_gameBoard, &GameBoard::juegoGuardado, this, [this](const QString &data) {
+        QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
+        settings.setValue(QStringLiteral("gameState"), data);
+        settings.sync();
+    });
     connect(m_gameBoard, &GameBoard::undoAvailabilityChanged, this, &Widget::onUndoAvailabilityChanged);
 
     connect(ui->startBtn, &QPushButton::clicked, this, &Widget::onStartClicked);
@@ -57,6 +62,7 @@ Widget::Widget(QWidget *parent)
     ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n0"));
 
     loadHighScore();
+    loadGameState();
 }
 
 Widget::~Widget()
@@ -77,6 +83,16 @@ void Widget::saveHighScore(int score)
     QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
     settings.setValue(QStringLiteral("highScore"), score);
     settings.sync();
+}
+
+void Widget::loadGameState()
+{
+    QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
+    QString estado = settings.value(QStringLiteral("gameState")).toString();
+    if (estado.isEmpty())
+        m_gameBoard->nuevoJuego();
+    else
+        m_gameBoard->deserializar(estado);
 }
 
 void Widget::onGameOver(int score)
