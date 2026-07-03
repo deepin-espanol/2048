@@ -4,7 +4,7 @@
 #include <QFont>
 
 Widget::Widget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::Widget), m_muted(false)
+    : QWidget(parent), ui(new Ui::Widget), m_muted(false), m_highScore(0)
 {
     ui->setupUi(this);
 
@@ -35,6 +35,8 @@ Widget::Widget(QWidget *parent)
     }
 
     connect(m_gameBoard, &GameBoard::puntuacionCambiada, this, &Widget::updateScore);
+    connect(m_gameBoard, &GameBoard::juegoTerminado, this, &Widget::onGameOver);
+    connect(m_gameBoard, &GameBoard::victoria, this, &Widget::onVictory);
     connect(m_gameBoard, &GameBoard::soundRequested, m_soundManager, &SoundManager::playSound);
     connect(m_gameBoard, &GameBoard::undoAvailabilityChanged, this, &Widget::onUndoAvailabilityChanged);
 
@@ -53,11 +55,46 @@ Widget::Widget(QWidget *parent)
 
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n0"));
     ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n0"));
+
+    loadHighScore();
 }
 
 Widget::~Widget()
 {
     delete ui;
+}
+
+void Widget::loadHighScore()
+{
+    QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
+    m_highScore = settings.value(QStringLiteral("highScore"), 0).toInt();
+    m_gameBoard->setMejorPuntuacion(m_highScore);
+    ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n") + QString::number(m_highScore));
+}
+
+void Widget::saveHighScore(int score)
+{
+    QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
+    settings.setValue(QStringLiteral("highScore"), score);
+    settings.sync();
+}
+
+void Widget::onGameOver(int score)
+{
+    if (score > m_highScore) {
+        m_highScore = score;
+        saveHighScore(score);
+        ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n") + QString::number(score));
+    }
+}
+
+void Widget::onVictory(int score)
+{
+    if (score > m_highScore) {
+        m_highScore = score;
+        saveHighScore(score);
+        ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n") + QString::number(score));
+    }
 }
 
 void Widget::onStartClicked()

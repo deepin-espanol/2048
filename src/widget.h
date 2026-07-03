@@ -26,9 +26,13 @@ signals:
 private slots:
     void onStartClicked();
     void updateScore(int score);
+    void onGameOver(int score);
+    void onVictory(int score);
     void onUndoAvailabilityChanged(bool available);
 
 private:
+    void loadHighScore();
+    void saveHighScore(int score);
     void loadSettings();
     void saveSettings();
 
@@ -37,6 +41,7 @@ private:
     SoundManager *m_soundManager;
     SettingsDialog *m_settingsDialog;
     bool m_muted;
+    int m_highScore;
 };
 
 #endif
