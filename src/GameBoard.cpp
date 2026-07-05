@@ -3,9 +3,11 @@
 
 #include <QRandomGenerator>
 #include <QKeyEvent>
+#include <QMouseEvent>
 #include <QResizeEvent>
-#include <QPainter>
+#include <QLinearGradient>
 #include <algorithm>
+#include <cmath>
 
 GameBoard::GameBoard(QWidget *parent)
     : QWidget(parent)
@@ -15,11 +17,20 @@ GameBoard::GameBoard(QWidget *parent)
 
     m_tablero.resize(TAMANIO, QVector<int>(TAMANIO, VACIO));
 
+    m_timerAnim.setInterval(16);
+    connect(&m_timerAnim, &QTimer::timeout, this, &GameBoard::animarTick);
+
     setMinimumSize(320, 320);
 }
 
 void GameBoard::nuevoJuego()
 {
+    m_timerAnim.stop();
+    m_faseAnim = FaseAnim::Ninguna;
+    m_inputBloqueado = false;
+    m_tilesAnim.clear();
+    m_filaSpawn = -1;
+
     m_undoStack.clear();
     emit undoAvailabilityChanged(false);
 
@@ -42,6 +53,10 @@ bool GameBoard::undo()
 {
     if (m_undoStack.isEmpty()) return false;
 
+    m_timerAnim.stop();
+    m_faseAnim = FaseAnim::Ninguna;
+    m_inputBloqueado = false;
+    m_tilesAnim.clear();
     auto estado = m_undoStack.takeLast();
     m_tablero = estado.first;
     m_puntos = estado.second;
@@ -117,36 +132,60 @@ bool GameBoard::puedeMover(Direccion d) const
     return false;
 }
 
-bool GameBoard::comprimirLinea(QVector<int> &linea)
+void GameBoard::celdaDesdeIndice(Direccion d, int linea, int indice, int &fila, int &col) const
+{
+    switch (d) {
+    case Direccion::Izquierda: fila = linea; col = indice; break;
+    case Direccion::Derecha:   fila = linea; col = TAMANIO - 1 - indice; break;
+    case Direccion::Arriba:    fila = indice; col = linea; break;
+    case Direccion::Abajo:     fila = TAMANIO - 1 - indice; col = linea; break;
+    }
+}
+
+bool GameBoard::comprimirLinea(const QVector<int> &linea, QVector<QVector<int>> &origenes, int &puntosGanados) const
 {
     QVector<int> compactos;
-    for (int i = 0; i < linea.size(); ++i)
-        if (linea[i] != VACIO)
+    QVector<int> indicesOrigen;
+    for (int i = 0; i < linea.size(); ++i) {
+        if (linea[i] != VACIO) {
             compactos.append(linea[i]);
-
-    QVector<int> resultado;
-    for (int i = 0; i < compactos.size(); ++i) {
-        if (i + 1 < compactos.size() && compactos[i] == compactos[i + 1]) {
-            resultado.append(compactos[i] * 2);
-            m_puntos += compactos[i] * 2;
-            ++i;
-        } else {
-            resultado.append(compactos[i]);
+            indicesOrigen.append(i);
         }
     }
-    while (resultado.size() < TAMANIO)
-        resultado.append(VACIO);
 
-    if (resultado == linea)
-        return false;
-    linea = resultado;
-    return true;
+    QVector<QVector<int>> origen(TAMANIO);
+    int k = 0;
+    int puntos = 0;
+    for (int i = 0; i < compactos.size(); ++i) {
+        if (i + 1 < compactos.size() && compactos[i] == compactos[i + 1]) {
+            origen[k].append(indicesOrigen[i]);
+            origen[k].append(indicesOrigen[i + 1]);
+            puntos += compactos[i] * 2;
+            ++i;
+        } else {
+            origen[k].append(indicesOrigen[i]);
+        }
+        ++k;
+    }
+
+    QVector<int> resultado(linea.size(), VACIO);
+    for (int i = 0; i < TAMANIO; ++i) {
+        if (origen[i].isEmpty()) continue;
+        resultado[i] = origen[i].size() == 2 ? linea[origen[i][0]] * 2 : linea[origen[i][0]];
+    }
+
+    puntosGanados = puntos;
+    origenes = origen;
+    return resultado != linea;
 }
 
 void GameBoard::procesarMovimiento(Direccion d)
 {
-    QVector<QVector<int>> anterior = m_tablero;
-    int puntosAnteriores = m_puntos;
+    if (m_inputBloqueado) return;
+
+    QVector<QVector<int>> nuevoTablero(TAMANIO, QVector<int>(TAMANIO, VACIO));
+    QVector<QVector<QVector<int>>> todasOrigenes;
+    int totalGanado = 0;
     bool cambiado = false;
 
     for (int i = 0; i < TAMANIO; ++i) {
@@ -159,27 +198,91 @@ void GameBoard::procesarMovimiento(Direccion d)
         if (d == Direccion::Derecha || d == Direccion::Abajo)
             std::reverse(linea.begin(), linea.end());
 
-        if (comprimirLinea(linea))
-            cambiado = true;
+        QVector<QVector<int>> origenes;
+        int ganado = 0;
+        bool lineaCambio = comprimirLinea(linea, origenes, ganado);
+        if (lineaCambio) cambiado = true;
+        totalGanado += ganado;
 
-        if (d == Direccion::Derecha || d == Direccion::Abajo)
-            std::reverse(linea.begin(), linea.end());
-
-        for (int j = 0; j < TAMANIO; ++j) {
-            if (d == Direccion::Izquierda || d == Direccion::Derecha)
-                m_tablero[i][j] = linea[j];
-            else
-                m_tablero[j][i] = linea[j];
+        for (int k = 0; k < TAMANIO; ++k) {
+            if (origenes[k].isEmpty()) continue;
+            int fila, col;
+            celdaDesdeIndice(d, i, k, fila, col);
+            nuevoTablero[fila][col] = origenes[k].size() == 2 ? linea[origenes[k][0]] * 2
+                                                              : linea[origenes[k][0]];
         }
+        todasOrigenes.append(origenes);
     }
 
     if (!cambiado) return;
 
     guardarEstadoUndo();
+    m_resultadoPendiente = nuevoTablero;
+    m_puntosPendientes = m_puntos + totalGanado;
+    m_fusionOcurrida = totalGanado > 0;
 
-    bool fusionado = m_puntos > puntosAnteriores;
-    agregarTileAleatorio();
-    emit soundRequested(fusionado ? SoundManager::SND_MERGE : SoundManager::SND_MOVE);
+    QVector<QPair<int, int>> vacias;
+    for (int i = 0; i < TAMANIO; ++i)
+        for (int j = 0; j < TAMANIO; ++j)
+            if (nuevoTablero[i][j] == VACIO)
+                vacias.append({i, j});
+
+    if (!vacias.isEmpty()) {
+        auto [f, c] = vacias[QRandomGenerator::global()->bounded(vacias.size())];
+        m_filaSpawn = f;
+        m_colSpawn = c;
+        m_valorSpawn = (QRandomGenerator::global()->bounded(10) < 9) ? 2 : 4;
+    }
+
+    iniciarDeslizamiento(todasOrigenes, d);
+}
+
+void GameBoard::iniciarDeslizamiento(const QVector<QVector<QVector<int>>> &origenes, Direccion d)
+{
+    m_tilesAnim.clear();
+    for (int i = 0; i < TAMANIO; ++i) {
+        for (int k = 0; k < TAMANIO; ++k) {
+            const QVector<int> &origen = origenes[i][k];
+            if (origen.isEmpty()) continue;
+
+            int filaDest, colDest;
+            celdaDesdeIndice(d, i, k, filaDest, colDest);
+
+            for (int s = 0; s < origen.size(); ++s) {
+                int filaOrig, colOrig;
+                celdaDesdeIndice(d, i, origen[s], filaOrig, colOrig);
+                TileAnim t;
+                t.fromRow = filaOrig;
+                t.fromCol = colOrig;
+                t.toRow = filaDest;
+                t.toCol = colDest;
+                t.value = m_tablero[filaOrig][colOrig];
+                t.isMerge = (s == 1);
+                m_tilesAnim.append(t);
+            }
+        }
+    }
+
+    m_faseAnim = FaseAnim::Deslizar;
+    m_inputBloqueado = true;
+    m_progresoDeslizar = 0.0;
+    m_cronometroAnim.restart();
+    m_timerAnim.start();
+    update();
+}
+
+void GameBoard::finalizarMovimiento()
+{
+    m_faseAnim = FaseAnim::Ninguna;
+    m_inputBloqueado = false;
+    m_timerAnim.stop();
+
+    if (m_filaSpawn >= 0) {
+        m_tablero[m_filaSpawn][m_colSpawn] = m_valorSpawn;
+        m_filaSpawn = -1;
+    }
+
+    emit soundRequested(m_fusionOcurrida ? SoundManager::SND_MERGE : SoundManager::SND_MOVE);
     actualizarUI();
     emitirGuardado();
 
@@ -205,8 +308,26 @@ void GameBoard::procesarMovimiento(Direccion d)
     }
 }
 
+void GameBoard::animarTick()
+{
+    if (m_faseAnim == FaseAnim::Deslizar) {
+        qreal p = qMin(1.0, m_cronometroAnim.elapsed() / qreal(m_duracionDeslizar));
+        m_progresoDeslizar = easeOutCubic(p);
+        update();
+        if (p >= 1.0)
+            finalizarMovimiento();
+    }
+}
+
+qreal GameBoard::easeOutCubic(qreal t) const
+{
+    return 1.0 - std::pow(1.0 - t, 3.0);
+}
+
 void GameBoard::keyPressEvent(QKeyEvent *event)
 {
+    if (m_inputBloqueado) return;
+
     if (event->key() == Qt::Key_F2 ||
         (event->key() == Qt::Key_N && (event->modifiers() & Qt::ControlModifier))) {
         nuevoJuego();
@@ -286,7 +407,20 @@ void GameBoard::paintEvent(QPaintEvent *)
 
     for (int i = 0; i < TAMANIO; ++i)
         for (int j = 0; j < TAMANIO; ++j)
-            pintarCelda(painter, i, j, m_tablero[i][j], 1.0);
+            pintarCelda(painter, i, j, VACIO, 1.0);
+
+    if (m_faseAnim == FaseAnim::Deslizar) {
+        for (const TileAnim &t : m_tilesAnim) {
+            qreal f = t.fromRow + (t.toRow - t.fromRow) * m_progresoDeslizar;
+            qreal c = t.fromCol + (t.toCol - t.fromCol) * m_progresoDeslizar;
+            pintarCelda(painter, f, c, t.value, 1.0);
+        }
+    } else {
+        for (int i = 0; i < TAMANIO; ++i)
+            for (int j = 0; j < TAMANIO; ++j)
+                if (m_tablero[i][j] != VACIO)
+                    pintarCelda(painter, i, j, m_tablero[i][j], 1.0);
+    }
 
     if (m_overlayShown)
         dibujarOverlay(painter, boardRect);

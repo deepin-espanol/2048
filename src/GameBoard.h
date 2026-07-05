@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <QVector>
+#include <QTimer>
+#include <QElapsedTimer>
 #include <QPainter>
 
 class SoundManager;
@@ -45,11 +47,25 @@ protected:
 
 private:
     enum class Direccion { Izquierda, Derecha, Arriba, Abajo };
+    enum class FaseAnim { Ninguna, Deslizar };
+
+    struct TileAnim {
+        int fromRow = 0, fromCol = 0;
+        int toRow = 0, toCol = 0;
+        int value = 0;
+        bool isMerge = false;
+        bool isSpawn = false;
+    };
 
     void agregarTileAleatorio();
     bool puedeMover(Direccion d) const;
     void procesarMovimiento(Direccion d);
-    bool comprimirLinea(QVector<int> &linea);
+    bool comprimirLinea(const QVector<int> &linea, QVector<QVector<int>> &origenes, int &puntosGanados) const;
+    void celdaDesdeIndice(Direccion d, int linea, int indice, int &fila, int &col) const;
+    void iniciarDeslizamiento(const QVector<QVector<QVector<int>>> &origenes, Direccion d);
+    void finalizarMovimiento();
+    void animarTick();
+    qreal easeOutCubic(qreal t) const;
     void actualizarUI();
     void guardarEstadoUndo();
     void emitirGuardado();
@@ -69,6 +85,21 @@ private:
     bool m_gameOver = false;
     bool m_victoria = false;
     bool m_overlayShown = false;
+
+    // Animacion
+    QVector<TileAnim> m_tilesAnim;
+    QVector<QVector<int>> m_resultadoPendiente;
+    int m_puntosPendientes = 0;
+    int m_filaSpawn = -1;
+    int m_colSpawn = -1;
+    int m_valorSpawn = 0;
+    bool m_fusionOcurrida = false;
+    int m_duracionDeslizar = 110;
+    FaseAnim m_faseAnim = FaseAnim::Ninguna;
+    QTimer m_timerAnim;
+    QElapsedTimer m_cronometroAnim;
+    qreal m_progresoDeslizar = 0.0;
+    bool m_inputBloqueado = false;
 
     SoundManager *m_soundManager = nullptr;
 };
