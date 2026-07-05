@@ -35,6 +35,13 @@ make
 ./2048
 ```
 
+O si se instalo globalmente:
+
+```bash
+sudo make install
+2048
+```
+
 ## Controles
 
 | Entrada | Accion |
