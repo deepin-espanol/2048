@@ -43,6 +43,7 @@ private:
     SettingsDialog *m_settingsDialog;
     bool m_muted;
     int m_highScore;
+    int m_volume;
 };
 
 #endif

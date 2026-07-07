@@ -4,7 +4,7 @@
 #include <QFont>
 
 Widget::Widget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::Widget), m_muted(false), m_highScore(0)
+    : QWidget(parent), ui(new Ui::Widget), m_muted(false), m_highScore(0), m_volume(70)
 {
     ui->setupUi(this);
 
@@ -56,6 +56,8 @@ Widget::Widget(QWidget *parent)
 
     loadSettings();
     m_soundManager->setMuted(m_muted);
+    m_soundManager->setVolume(m_volume / 100.0f);
+
     m_settingsDialog->setSound(!m_muted);
 
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n0"));
@@ -143,11 +145,13 @@ void Widget::loadSettings()
 {
     QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
     m_muted = settings.value(QStringLiteral("muted"), false).toBool();
+    m_volume = settings.value(QStringLiteral("volume"), 70).toInt();
 }
 
 void Widget::saveSettings()
 {
     QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
     settings.setValue(QStringLiteral("muted"), m_muted);
+    settings.setValue(QStringLiteral("volume"), m_volume);
     settings.sync();
 }
