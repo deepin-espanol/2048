@@ -29,6 +29,7 @@ void GameBoard::nuevoJuego()
     m_faseAnim = FaseAnim::Ninguna;
     m_inputBloqueado = false;
     m_tilesAnim.clear();
+    m_tilesPop.clear();
     m_filaSpawn = -1;
 
     m_undoStack.clear();
@@ -57,6 +58,9 @@ bool GameBoard::undo()
     m_faseAnim = FaseAnim::Ninguna;
     m_inputBloqueado = false;
     m_tilesAnim.clear();
+    m_tilesPop.clear();
+    m_filaSpawn = -1;
+
     auto estado = m_undoStack.takeLast();
     m_tablero = estado.first;
     m_puntos = estado.second;
@@ -271,10 +275,43 @@ void GameBoard::iniciarDeslizamiento(const QVector<QVector<QVector<int>>> &orige
     update();
 }
 
+void GameBoard::iniciarPop()
+{
+    m_tablero = m_resultadoPendiente;
+    m_puntos = m_puntosPendientes;
+
+    m_tilesPop.clear();
+    for (const TileAnim &t : m_tilesAnim) {
+        if (t.isMerge) {
+            TileAnim p;
+            p.fromRow = p.toRow = t.toRow;
+            p.fromCol = p.toCol = t.toCol;
+            p.value = t.value * 2;
+            p.isMerge = true;
+            m_tilesPop.append(p);
+        }
+    }
+    if (m_filaSpawn >= 0) {
+        TileAnim p;
+        p.fromRow = p.toRow = m_filaSpawn;
+        p.fromCol = p.toCol = m_colSpawn;
+        p.value = m_valorSpawn;
+        p.isSpawn = true;
+        m_tilesPop.append(p);
+    }
+
+    m_tilesAnim.clear();
+    m_faseAnim = FaseAnim::Pop;
+    m_progresoPop = 0.0;
+    m_cronometroAnim.restart();
+    update();
+}
+
 void GameBoard::finalizarMovimiento()
 {
     m_faseAnim = FaseAnim::Ninguna;
     m_inputBloqueado = false;
+    m_tilesPop.clear();
     m_timerAnim.stop();
 
     if (m_filaSpawn >= 0) {
@@ -315,6 +352,12 @@ void GameBoard::animarTick()
         m_progresoDeslizar = easeOutCubic(p);
         update();
         if (p >= 1.0)
+            iniciarPop();
+    } else if (m_faseAnim == FaseAnim::Pop) {
+        qreal p = qMin(1.0, m_cronometroAnim.elapsed() / qreal(m_duracionPop));
+        m_progresoPop = easeOutBack(p);
+        update();
+        if (p >= 1.0)
             finalizarMovimiento();
     }
 }
@@ -322,6 +365,14 @@ void GameBoard::animarTick()
 qreal GameBoard::easeOutCubic(qreal t) const
 {
     return 1.0 - std::pow(1.0 - t, 3.0);
+}
+
+qreal GameBoard::easeOutBack(qreal t) const
+{
+    const qreal c1 = 1.70158;
+    const qreal c3 = c1 + 1.0;
+    qreal u = t - 1.0;
+    return 1.0 + c3 * u * u * u + c1 * u * u;
 }
 
 void GameBoard::keyPressEvent(QKeyEvent *event)
@@ -378,6 +429,45 @@ void GameBoard::keyPressEvent(QKeyEvent *event)
     procesarMovimiento(d);
 }
 
+void GameBoard::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        setFocus();
+        m_puntoTactil = event->position();
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void GameBoard::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && !m_inputBloqueado) {
+        QPointF delta = event->position() - m_puntoTactil;
+        const qreal umbral = 24.0;
+
+        if (m_overlayShown || (qAbs(delta.x()) < umbral && qAbs(delta.y()) < umbral)) {
+            if (m_overlayShown) {
+                if (m_victoria) {
+                    m_victoria = false;
+                    m_overlayShown = false;
+                } else {
+                    nuevoJuego();
+                }
+                update();
+            }
+            QWidget::mouseReleaseEvent(event);
+            return;
+        }
+
+        Direccion d;
+        if (qAbs(delta.x()) > qAbs(delta.y()))
+            d = delta.x() > 0 ? Direccion::Derecha : Direccion::Izquierda;
+        else
+            d = delta.y() > 0 ? Direccion::Abajo : Direccion::Arriba;
+        procesarMovimiento(d);
+    }
+    QWidget::mouseReleaseEvent(event);
+}
+
 void GameBoard::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -415,6 +505,13 @@ void GameBoard::paintEvent(QPaintEvent *)
             qreal c = t.fromCol + (t.toCol - t.fromCol) * m_progresoDeslizar;
             pintarCelda(painter, f, c, t.value, 1.0);
         }
+    } else if (m_faseAnim == FaseAnim::Pop) {
+        for (int i = 0; i < TAMANIO; ++i)
+            for (int j = 0; j < TAMANIO; ++j)
+                if (m_tablero[i][j] != VACIO)
+                    pintarCelda(painter, i, j, m_tablero[i][j], 1.0);
+        for (const TileAnim &t : m_tilesPop)
+            pintarCelda(painter, t.toRow, t.toCol, t.value, m_progresoPop);
     } else {
         for (int i = 0; i < TAMANIO; ++i)
             for (int j = 0; j < TAMANIO; ++j)
@@ -500,7 +597,7 @@ void GameBoard::dibujarOverlay(QPainter &painter, const QRectF &boardRect)
     painter.setPen(QColor(190, 190, 190));
     QString pista = m_victoria
                         ? tr("Press ENTER to keep playing - SPACE for a new game")
-                        : tr("Press ENTER to play again");
+                        : tr("Press ENTER or click to play again");
     painter.drawText(QRectF(panelRect.left(), panelRect.top() + panelRect.height() * 0.62,
                             panelRect.width(), panelRect.height() * 0.25),
                      Qt::AlignCenter, pista);
