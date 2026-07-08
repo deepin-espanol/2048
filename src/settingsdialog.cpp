@@ -6,7 +6,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     : DDialog(parent)
 {
     setTitle(tr("Settings"));
-    setFixedSize(380, 200);
+    setFixedSize(380, 320);
     setOnButtonClickedClose(true);
 
     QWidget *content = new QWidget(this);
@@ -34,6 +34,21 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     soundRow->addWidget(m_soundSwitch);
     audioLayout->addLayout(soundRow);
 
+    QHBoxLayout *volRow = new QHBoxLayout;
+    DLabel *volIcon = new DLabel(tr("Volume"));
+    volRow->addWidget(volIcon);
+    m_volumeSlider = new DSlider(Qt::Horizontal);
+    m_volumeSlider->setMinimum(0);
+    m_volumeSlider->setMaximum(100);
+    m_volumeSlider->setValue(70);
+    m_volumeSlider->setFixedWidth(180);
+    volRow->addWidget(m_volumeSlider, 1);
+    m_volValueLabel = new DLabel(QStringLiteral("70%"));
+    m_volValueLabel->setFixedWidth(36);
+    m_volValueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    volRow->addWidget(m_volValueLabel);
+    audioLayout->addLayout(volRow);
+
     mainLayout->addWidget(audioFrame);
     mainLayout->addStretch();
 
@@ -50,8 +65,17 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     });
 
     connect(m_soundSwitch, &DSwitchButton::toggled, this, &SettingsDialog::soundToggled);
+    connect(m_volumeSlider, &DSlider::valueChanged, this, [this](int val) {
+        m_volValueLabel->setText(QStringLiteral("%1%").arg(val));
+        emit volumeChanged(val);
+    });
 }
 
 bool SettingsDialog::soundEnabled() const { return m_soundSwitch->isChecked(); }
+int SettingsDialog::volume() const { return m_volumeSlider->value(); }
 
 void SettingsDialog::setSound(bool enabled) { m_soundSwitch->setChecked(enabled); }
+void SettingsDialog::setVolume(int vol) {
+    m_volumeSlider->setValue(vol);
+    m_volValueLabel->setText(QStringLiteral("%1%").arg(vol));
+}

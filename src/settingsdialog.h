@@ -3,6 +3,7 @@
 
 #include <DDialog>
 #include <DSwitchButton>
+#include <DSlider>
 #include <DLabel>
 #include <DFrame>
 
@@ -15,13 +16,19 @@ public:
     explicit SettingsDialog(QWidget *parent = nullptr);
 
     bool soundEnabled() const;
+    int volume() const;
+
     void setSound(bool enabled);
+    void setVolume(int vol);
 
 signals:
     void soundToggled(bool enabled);
+    void volumeChanged(int vol);
 
 private:
     DSwitchButton *m_soundSwitch;
+    DSlider *m_volumeSlider;
+    DLabel *m_volValueLabel;
 };
 
 #endif

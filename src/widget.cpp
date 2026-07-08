@@ -53,6 +53,11 @@ Widget::Widget(QWidget *parent)
         m_soundManager->setMuted(m_muted);
         saveSettings();
     });
+    connect(m_settingsDialog, &SettingsDialog::volumeChanged, this, [this](int vol) {
+        m_volume = vol;
+        m_soundManager->setVolume(vol / 100.0f);
+        saveSettings();
+    });
 
     loadSettings();
     m_soundManager->setMuted(m_muted);
@@ -135,6 +140,7 @@ void Widget::onUndoAvailabilityChanged(bool available)
 void Widget::openSettings()
 {
     m_settingsDialog->setSound(!m_muted);
+    m_settingsDialog->setVolume(m_volume);
 
     if (m_settingsDialog->exec() == QDialog::Accepted) {
         saveSettings();
