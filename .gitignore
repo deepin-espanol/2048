@@ -1,9 +1,35 @@
 # Build
 build/
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
 *.o
 *.so
 *.a
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.moc
+*.moc.*
+*.qobjectsc
+*.qobjectsc.h
+
+# Qt
+.qt/
+
+# Paquetes .deb
+*.deb
+*.dsc
+*.changes
+*.buildinfo
+*.tar.xz
+*.tar.gz
 
 # Editor
 *.swp
 *~
+.vscode/
+.idea/

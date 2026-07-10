@@ -6,8 +6,9 @@ Juego clasico 2048 desarrollado con Qt6 y Deepin Tool Kit (DTK6) para Deepin Lin
 
 - Tablero 4x4 con tiles numerados
 - Fusiona tiles iguales para llegar a 2048
+- Animaciones fluidas de movimiento, fusion y aparicion de fichas
 - Se puede seguir jugando despues de alcanzar 2048
-- Soporte para teclado
+- Soporte para teclado, raton y gestos tactiles (deslizar)
 - Guardado automatico de la partida en curso
 - Deshacer (hasta 20 movimientos)
 - Puntuacion en tiempo real
@@ -47,7 +48,25 @@ sudo make install
 | Entrada | Accion |
 |---------|--------|
 | `Flechas` / `WASD` | Mover las fichas |
+| Deslizar con el raton o tactil | Mover las fichas |
 | `Ctrl+Z` | Deshacer el ultimo movimiento |
 | `F2` / `Ctrl+N` | Nueva partida |
 | `ENTER` | Continuar jugando tras llegar a 2048 |
 | `ESPACIO` | Nueva partida (en la pantalla de fin/victoria) |
+
+## Empaquetar como .deb
+
+Requiere las herramientas de empaquetado:
+
+```bash
+sudo apt install debhelper devscripts
+```
+
+Para generar el paquete `.deb`:
+
+```bash
+dpkg-buildpackage -b -us -uc
+```
+
+El `.deb` se crea en el directorio padre (`../2048-deepin_0.3.0-1_amd64.deb`).
+Se puede instalar con `sudo apt install ./2048-deepin_*.deb`.
