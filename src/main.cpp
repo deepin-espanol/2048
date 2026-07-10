@@ -1,10 +1,11 @@
 #include "MainWindow.h"
+#include <DAboutDialog>
 #include <DApplication>
 #include <DWidgetUtil>
 #include <QApplication>
 #include <QDir>
 #include <QTranslator>
-#include <QLocale>
+#include <QCommandLineParser>
 
 DWIDGET_USE_NAMESPACE
 
@@ -21,6 +22,29 @@ int main(int argc, char *argv[])
         QLatin1String("2048_") + locale.left(2),
         QLatin1String(":/translations/"));
     app.installTranslator(&appTranslator);
+    app.setProductIcon(QIcon(":/icons/2048.svg"));
+    app.setWindowIcon(QIcon(":/icons/2048.svg"));
+    app.setProductName(QApplication::translate("main", "2048"));
+
+    DAboutDialog dialog;
+    app.setAboutDialog(&dialog);
+    dialog.setWindowTitle("2048");
+    dialog.setProductName("<span>2048</span>");
+    dialog.setProductIcon(QIcon(":/icons/2048.svg"));
+    dialog.setDescription(
+        "<div style='text-align:center;'><img src=':/icons/Logo-Racoon.png' width='128'/></div>"
+        "<span style=' font-size:8pt; font-weight:600;'>Deepin en Español </span>"
+        "<a href='https://deepinenespanol.org'>https://deepinenespanol.org</a><br/>"
+        "<span style=' font-size:8pt; font-weight:600;'>Deepin Latin Code - developers</span>");
+    dialog.setVersion(DApplication::buildVersion("Version 0.3"));
+    dialog.setWebsiteName("deepinenespanol.org");
+    dialog.setWebsiteLink("https://deepinenespanol.org");
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription(QApplication::translate("main", "Juego 2048"));
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.process(app);
 
     MainWindow w;
     w.show();

@@ -25,6 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *settingsAction = menu->addAction(tr("Settings"));
     connect(settingsAction, &QAction::triggered, w, &Widget::openSettings);
     titlebar()->setMenu(menu);
+
+    connect(w, &Widget::musicToggled, this, [this](bool muted) {
+        w->soundManager()->setMuted(muted);
+    });
 }
 
 MainWindow::~MainWindow()
