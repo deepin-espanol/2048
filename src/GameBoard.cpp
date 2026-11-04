@@ -38,6 +38,7 @@ void GameBoard::nuevoJuego()
     m_puntos = 0;
     m_gameOver = false;
     m_victoria = false;
+    m_2048Alcanzado = false;
     m_overlayShown = false;
 
     for (int i = 0; i < TAMANIO; ++i)
@@ -71,6 +72,7 @@ bool GameBoard::undo()
         m_victoria = false;
         m_overlayShown = false;
     }
+    m_2048Alcanzado = hayFicha2048();
 
     actualizarUI();
     emitirGuardado();
@@ -98,6 +100,15 @@ void GameBoard::agregarTileAleatorio()
     int idx = QRandomGenerator::global()->bounded(vacias.size());
     auto [f, c] = vacias[idx];
     m_tablero[f][c] = (QRandomGenerator::global()->bounded(10) < 9) ? 2 : 4;
+}
+
+bool GameBoard::hayFicha2048() const
+{
+    for (const auto &fila : m_tablero)
+        for (int v : fila)
+            if (v >= 2048)
+                return true;
+    return false;
 }
 
 void GameBoard::actualizarUI()
@@ -323,13 +334,8 @@ void GameBoard::finalizarMovimiento()
     actualizarUI();
     emitirGuardado();
 
-    bool alcanzo2048 = false;
-    for (int i = 0; i < TAMANIO && !alcanzo2048; ++i)
-        for (int j = 0; j < TAMANIO && !alcanzo2048; ++j)
-            if (m_tablero[i][j] == 2048)
-                alcanzo2048 = true;
-
-    if (alcanzo2048 && !m_victoria) {
+    if (!m_2048Alcanzado && hayFicha2048()) {
+        m_2048Alcanzado = true;
         m_victoria = true;
         m_overlayShown = true;
         emit soundRequested(SoundManager::SND_VICTORY);
@@ -656,20 +662,43 @@ QString GameBoard::serializar() const
     return numeros.join(QLatin1Char(',')) + QLatin1Char(';') + QString::number(m_puntos);
 }
 
-void GameBoard::deserializar(const QString &data)
+bool GameBoard::deserializar(const QString &data)
 {
     QStringList partes = data.split(QLatin1Char(';'));
     QStringList numeros = partes.value(0).split(QLatin1Char(','));
-    if (numeros.size() != TAMANIO * TAMANIO) return;
+    if (numeros.size() != TAMANIO * TAMANIO) return false;
 
+    // Validar antes de tocar el tablero: solo 0 o potencias de 2 (>= 2)
+    QVector<QVector<int>> tablero(TAMANIO, QVector<int>(TAMANIO, VACIO));
+    bool hayFichas = false;
+    bool tiene2048 = false;
     int idx = 0;
-    for (int i = 0; i < TAMANIO; ++i)
-        for (int j = 0; j < TAMANIO; ++j)
-            m_tablero[i][j] = numeros[idx++].toInt();
+    for (int i = 0; i < TAMANIO; ++i) {
+        for (int j = 0; j < TAMANIO; ++j) {
+            bool ok = false;
+            const int v = numeros[idx++].toInt(&ok);
+            if (!ok || v < 0 || (v != VACIO && (v < 2 || (v & (v - 1)) != 0)))
+                return false;
+            tablero[i][j] = v;
+            hayFichas = hayFichas || v != VACIO;
+            tiene2048 = tiene2048 || v >= 2048;
+        }
+    }
+    if (!hayFichas) return false;
 
-    m_puntos = partes.size() > 1 ? partes[1].toInt() : 0;
+    m_timerAnim.stop();
+    m_faseAnim = FaseAnim::Ninguna;
+    m_inputBloqueado = false;
+    m_tilesAnim.clear();
+    m_tilesPop.clear();
+    m_filaSpawn = -1;
+
+    m_tablero = tablero;
+    m_puntos = qMax(0, partes.size() > 1 ? partes[1].toInt() : 0);
     m_gameOver = false;
+    // Si ya se alcanzo 2048 no se vuelve a mostrar la pantalla de victoria
     m_victoria = false;
+    m_2048Alcanzado = tiene2048;
     m_overlayShown = false;
     m_undoStack.clear();
     emit undoAvailabilityChanged(false);
@@ -682,4 +711,5 @@ void GameBoard::deserializar(const QString &data)
 
     actualizarUI();
     emitirGuardado();
+    return true;
 }

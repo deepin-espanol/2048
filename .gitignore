@@ -33,3 +33,13 @@ ui_*.h
 *~
 .vscode/
 .idea/
+
+# debhelper
+obj-*/
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/*.substvars
+debian/*.debhelper.log
+debian/2048-deepin/
+dist/

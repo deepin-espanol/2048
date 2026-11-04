@@ -96,10 +96,9 @@ void Widget::loadGameState()
 {
     QSettings settings(QStringLiteral("deepin-es"), QStringLiteral("2048"));
     QString estado = settings.value(QStringLiteral("gameState")).toString();
-    if (estado.isEmpty())
+    // Partida guardada ausente o corrupta: empezar una nueva
+    if (estado.isEmpty() || !m_gameBoard->deserializar(estado))
         m_gameBoard->nuevoJuego();
-    else
-        m_gameBoard->deserializar(estado);
 }
 
 void Widget::onGameOver(int score)
@@ -130,6 +129,14 @@ void Widget::onStartClicked()
 void Widget::updateScore(int score)
 {
     ui->scoreLabel->setText(tr("SCORE") + QStringLiteral("\n") + QString::number(score));
+
+    // El record se actualiza en vivo, no solo al terminar la partida
+    if (score > m_highScore) {
+        m_highScore = score;
+        m_gameBoard->setMejorPuntuacion(score);
+        saveHighScore(score);
+        ui->bestLabel->setText(tr("BEST") + QStringLiteral("\n") + QString::number(score));
+    }
 }
 
 void Widget::onUndoAvailabilityChanged(bool available)

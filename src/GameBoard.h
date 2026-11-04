@@ -23,7 +23,7 @@ public:
     void nuevoJuego();
     bool undo();
     QString serializar() const;
-    void deserializar(const QString &data);
+    bool deserializar(const QString &data);
     SoundManager *soundManager() const { return m_soundManager; }
     int puntuacion() const { return m_puntos; }
     int mejorPuntuacion() const { return m_mejorPuntuacion; }
@@ -89,6 +89,8 @@ private:
     int m_margenY = 0;
     bool m_gameOver = false;
     bool m_victoria = false;
+    bool m_2048Alcanzado = false; // evita repetir la victoria al seguir jugando
+    bool hayFicha2048() const;
     bool m_overlayShown = false;
 
     // Animacion

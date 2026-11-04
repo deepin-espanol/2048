@@ -19,7 +19,7 @@ Juego clasico 2048 desarrollado con Qt6 y Deepin Tool Kit (DTK6) para Deepin Lin
 ## Dependencias
 
 ```bash
-sudo apt install qt6-base-dev libdtk6widget-dev cmake g++
+sudo apt install qt6-base-dev qt6-multimedia-dev libdtk6widget-dev cmake g++
 ```
 
 ## Compilar

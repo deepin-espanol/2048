@@ -1,3 +1,14 @@
+2048-deepin (0.3.1-1) unstable; urgency=medium
+
+  * Elimina debian/compat: duplicaba debhelper-compat (= 13) y hacia
+    fallar dh (y el CI) antes de compilar.
+  * La victoria ya no se repite en cada movimiento al seguir jugando.
+  * Una partida guardada corrupta ya no deja el tablero vacio.
+  * El record se actualiza en vivo durante la partida.
+  * CI: dependencias tomadas de debian/control, checkout@v7, artefacto .deb.
+
+ -- Deepin en Español <contacto@deepinenespanol.org>  Wed, 04 Nov 2026 12:00:00 +0000
+
 2048-deepin (0.3.0-1) unstable; urgency=medium
 
   * Empaquetado inicial para Deepin Linux.
