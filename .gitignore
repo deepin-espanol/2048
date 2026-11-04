@@ -43,3 +43,9 @@ debian/*.substvars
 debian/*.debhelper.log
 debian/2048-deepin/
 dist/
+
+# linyaps (ll-builder)
+debs/
+linglong/
+*.uab
+*.layer

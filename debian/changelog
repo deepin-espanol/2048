@@ -1,3 +1,11 @@
+2048-deepin (0.3.2-1) unstable; urgency=medium
+
+  * Paquete linyaps (.uab) para amd64 y arm64 generado automaticamente
+    en cada release a partir del .deb (linglong.yaml nuevo).
+  * Release automatica a partir de la version de debian/changelog.
+
+ -- Deepin en Español <contacto@deepinenespanol.org>  Wed, 04 Nov 2026 15:45:00 +0000
+
 2048-deepin (0.3.1-1) unstable; urgency=medium
 
   * Elimina debian/compat: duplicaba debhelper-compat (= 13) y hacia

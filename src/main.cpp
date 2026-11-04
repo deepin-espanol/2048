@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     app.setOrganizationName("deepin en español");
     app.setApplicationName("2048-deepin");
     app.setApplicationDisplayName("2048");
-    app.setApplicationVersion(QStringLiteral("0.3.1"));
+    app.setApplicationVersion(QStringLiteral("0.3.2"));
 
     QTranslator appTranslator;
     QString locale = QLocale::system().name();
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
         "<span style=' font-size:8pt; font-weight:600;'>Deepin en Español </span>"
         "<a href='https://deepinenespanol.org'>https://deepinenespanol.org</a><br/>"
         "<span style=' font-size:8pt; font-weight:600;'>Deepin Latin Code - developers</span>");
-    dialog.setVersion(DApplication::buildVersion(QStringLiteral("0.3.1")));
+    dialog.setVersion(DApplication::buildVersion(QStringLiteral("0.3.2")));
     dialog.setWebsiteName("deepinenespanol.org");
     dialog.setWebsiteLink("https://deepinenespanol.org");
 
