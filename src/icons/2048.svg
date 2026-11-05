@@ -1,11 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="8" fill="#bbada0"/>
-  <rect x="4" y="4" width="26" height="26" rx="4" fill="#eee4da"/>
-  <text x="17" y="23" font-size="14" font-weight="bold" fill="#776e65" text-anchor="middle">2</text>
-  <rect x="34" y="4" width="26" height="26" rx="4" fill="#f2b179"/>
-  <text x="47" y="23" font-size="12" font-weight="bold" fill="#f9f6f2" text-anchor="middle">8</text>
-  <rect x="4" y="34" width="26" height="26" rx="4" fill="#f65e3b"/>
-  <text x="17" y="53" font-size="12" font-weight="bold" fill="#f9f6f2" text-anchor="middle">64</text>
-  <rect x="34" y="34" width="26" height="26" rx="4" fill="#edc53f"/>
-  <text x="47" y="52" font-size="10" font-weight="bold" fill="#f9f6f2" text-anchor="middle">1024</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1.2" flood-color="#5a4a3a" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5d24e"/>
+      <stop offset="100%" stop-color="#e0b41f"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#bbada0"/>
+  <g font-family="sans-serif" font-weight="bold" text-anchor="middle" filter="url(#sh)">
+    <rect x="14" y="14" width="47" height="47" rx="9" fill="#eee4da"/>
+    <text x="37.5" y="49" font-size="32" fill="#776e65">2</text>
+    <rect x="67" y="14" width="47" height="47" rx="9" fill="#f2b179"/>
+    <text x="90.5" y="49" font-size="32" fill="#f9f6f2">8</text>
+    <rect x="14" y="67" width="47" height="47" rx="9" fill="#f65e3b"/>
+    <text x="37.5" y="101" font-size="27" fill="#f9f6f2">64</text>
+    <rect x="67" y="67" width="47" height="47" rx="9" fill="url(#gold)"/>
+    <text x="90.5" y="98" font-size="17" fill="#ffffff">2048</text>
+  </g>
 </svg>
